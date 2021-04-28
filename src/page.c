@@ -14,6 +14,7 @@ terms of the MIT license. A copy of the license can be found in the file
 #include "mimalloc.h"
 #include "mimalloc-internal.h"
 #include "mimalloc-atomic.h"
+#include <stdio.h>
 
 /* -----------------------------------------------------------
   Definition of page queues for each block size
@@ -810,8 +811,10 @@ static mi_page_t* mi_find_page(mi_heap_t* heap, size_t size) mi_attr_noexcept {
 void* _mi_malloc_generic(mi_heap_t* heap, size_t size) mi_attr_noexcept
 {
   mi_assert_internal(heap != NULL);
+  printf("malloc generic");
 
   // initialize if necessary
+  // p: probably don't need this?
   if (mi_unlikely(!mi_heap_is_initialized(heap))) {
     mi_thread_init(); // calls `_mi_heap_init` in turn
     heap = mi_get_default_heap();
@@ -819,13 +822,15 @@ void* _mi_malloc_generic(mi_heap_t* heap, size_t size) mi_attr_noexcept
   }
   mi_assert_internal(mi_heap_is_initialized(heap));
 
+  // p: not yet
   // call potential deferred free routines
-  _mi_deferred_free(heap, false);
+  // _mi_deferred_free(heap, false);
 
   // free delayed frees from other threads
-  _mi_heap_delayed_free(heap);
+  // _mi_heap_delayed_free(heap);
 
   // find (or allocate) a page of the right size
+  // p: call into MMTk here
   mi_page_t* page = mi_find_page(heap, size);
   if (mi_unlikely(page == NULL)) { // first time out of memory, try to collect and retry the allocation once more
     mi_heap_collect(heap, true /* force */);
