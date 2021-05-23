@@ -15,6 +15,8 @@ terms of the MIT license. A copy of the license can be found in the file
 #include "mimalloc-internal.h"
 #include "mimalloc-atomic.h"
 #include <stdio.h>
+#include "mmtk.h"
+#include <unistd.h>
 
 /* -----------------------------------------------------------
   Definition of page queues for each block size
@@ -244,7 +246,10 @@ void _mi_page_reclaim(mi_heap_t* heap, mi_page_t* page) {
 static mi_page_t* mi_page_fresh_alloc(mi_heap_t* heap, mi_page_queue_t* pq, size_t block_size) {
   mi_assert_internal(pq==NULL||mi_heap_contains_queue(heap, pq));
   mi_assert_internal(pq==NULL||block_size == pq->block_size);
+  // here, don't call _mi_segment_page_alloc
+  // call into MMTk
   mi_page_t* page = _mi_segment_page_alloc(heap, block_size, &heap->tld->segments, &heap->tld->os);
+  // mi_page_t* page = mmtk_page_alloc(block_size);
   if (page == NULL) {
     // this may be out-of-memory, or an abandoned page was reclaimed (and in our queue)
     return NULL;
@@ -788,6 +793,7 @@ static mi_page_t* mi_huge_page_alloc(mi_heap_t* heap, size_t size) {
 // Allocate a page
 // Note: in debug mode the size includes MI_PADDING_SIZE and might have overflowed.
 static mi_page_t* mi_find_page(mi_heap_t* heap, size_t size) mi_attr_noexcept {
+  write(stderr, "mi_find_page", 15);
   // huge allocation?
   const size_t req_size = size - MI_PADDING_SIZE;  // correct for padding_size in case of an overflow on `size`  
   if (mi_unlikely(req_size > (MI_LARGE_OBJ_SIZE_MAX - MI_PADDING_SIZE) )) {
@@ -805,16 +811,17 @@ static mi_page_t* mi_find_page(mi_heap_t* heap, size_t size) mi_attr_noexcept {
     return mi_find_free_page(heap, size);
   }
 }
-
+#include <unistd.h>
+#include <assert.h>
 // Generic allocation routine if the fast path (`alloc.c:mi_page_malloc`) does not succeed.
 // Note: in debug mode the size includes MI_PADDING_SIZE and might have overflowed.
 void* _mi_malloc_generic(mi_heap_t* heap, size_t size) mi_attr_noexcept
 {
-  mi_assert_internal(heap != NULL);
-  printf("malloc generic");
+  // mi_assert_internal(heap != NULL);
+  // do_something();
+  // write(stderr, "aaaa", 10);
 
   // initialize if necessary
-  // p: probably don't need this?
   if (mi_unlikely(!mi_heap_is_initialized(heap))) {
     mi_thread_init(); // calls `_mi_heap_init` in turn
     heap = mi_get_default_heap();
@@ -832,9 +839,13 @@ void* _mi_malloc_generic(mi_heap_t* heap, size_t size) mi_attr_noexcept
   // find (or allocate) a page of the right size
   // p: call into MMTk here
   mi_page_t* page = mi_find_page(heap, size);
+  // write(stderr, "find page", 10);
+  // do_something();
   if (mi_unlikely(page == NULL)) { // first time out of memory, try to collect and retry the allocation once more
+    // write(stderr, "find page aaaaaaaaaaaaaa", 10);
     mi_heap_collect(heap, true /* force */);
     page = mi_find_page(heap, size);
+    do_something();
   }
 
   if (mi_unlikely(page == NULL)) { // out of memory

@@ -19,6 +19,7 @@ terms of the MIT license. A copy of the license can be found in the file
 #include "mimalloc.h"
 #include "mimalloc-internal.h"
 #include "mimalloc-atomic.h"
+#include "mmtk.h"
 
 #include <string.h>  // strerror
 
@@ -53,6 +54,9 @@ terms of the MIT license. A copy of the license can be found in the file
 #define MADV_DONTNEED POSIX_MADV_DONTNEED
 #endif
 #endif
+
+#include <unistd.h>
+#include <stdio.h>
 
 /* -----------------------------------------------------------
   Initialization.
@@ -730,8 +734,10 @@ static bool mi_os_commitx(void* addr, size_t size, bool commit, bool conservativ
   #elif defined(MAP_FIXED)
   if (!commit) {
     // use mmap with MAP_FIXED to discard the existing memory (and reduce commit charge)
-    void* p = mmap(start, csize, PROT_NONE, (MAP_FIXED | MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE), -1, 0);
-    if (p != start) { err = errno; }
+    mimalloc_dzmmap(start, csize);
+    do_something();
+    // void* p = mmap(start, csize, PROT_NONE, (MAP_FIXED | MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE), -1, 0);
+    // if (p != start) { err = errno; }
   }
   else {
     // for commit, just change the protection

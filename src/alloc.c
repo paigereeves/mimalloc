@@ -23,7 +23,6 @@ terms of the MIT license. A copy of the license can be found in the file
 // Fast allocation in a page: just pop from the free list.
 // Fall back to generic allocation only if the list is empty.
 extern inline void* _mi_page_malloc(mi_heap_t* heap, mi_page_t* page, size_t size) mi_attr_noexcept {
-  printf("fast alloc");
   mi_assert_internal(page->xblock_size==0||mi_page_block_size(page) >= size);
   mi_block_t* const block = page->free;
   if (mi_unlikely(block == NULL)) {
@@ -91,13 +90,13 @@ extern inline mi_decl_restrict void* mi_heap_malloc_small(mi_heap_t* heap, size_
 }
 
 extern inline mi_decl_restrict void* mi_malloc_small(size_t size) mi_attr_noexcept {
-  printf("malloc small");
   return mi_heap_malloc_small(mi_get_default_heap(), size);
 }
 
 // The main allocation function
 extern inline mi_decl_restrict void* mi_heap_malloc(mi_heap_t* heap, size_t size) mi_attr_noexcept {
-  printf("alloc");
+
+
   if (mi_likely(size <= MI_SMALL_SIZE_MAX)) {
     return mi_heap_malloc_small(heap, size);
   }
@@ -117,7 +116,6 @@ extern inline mi_decl_restrict void* mi_heap_malloc(mi_heap_t* heap, size_t size
 }
 
 extern inline mi_decl_restrict void* mi_malloc(size_t size) mi_attr_noexcept {
-  printf("mimalloc");
   return mi_heap_malloc(mi_get_default_heap(), size);
 }
 

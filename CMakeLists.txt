@@ -203,6 +203,9 @@ else()
   endif()
 endif()
 
+find_library(mmtk mmtk /home/paiger/mmtk-core/target/debug)
+list(APPEND mi_libraries ${mmtk})
+
 # -----------------------------------------------------------------------------
 # Install and output names
 # -----------------------------------------------------------------------------
